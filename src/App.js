@@ -8,7 +8,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/spotify-playlist-app" element={<Home />} />
         <Route path="/callback" element={<Callback />} />
       </Routes>
     </Router>
