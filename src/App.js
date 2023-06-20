@@ -19,7 +19,7 @@ function App() {
   const isLocal = process.env.NODE_ENV === 'development';
 
   return (
-    <Router basename={isLocal?"":"/spotify-playlist-app"}>
+    <Router>
       <Routes>
         <Route path="/spotify-playlist-app" element={accessToken ? <Home accessToken={accessToken} setAccessToken={setAccessToken}/>:<Login />} />
         <Route path="/" element={accessToken ? <Home accessToken={accessToken} setAccessToken={setAccessToken}/>:<Login />} />

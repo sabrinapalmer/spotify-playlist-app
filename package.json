@@ -1,6 +1,5 @@
 {
   "name": "spotify-playlist-app",
-  "homepage": "https://sabrinapalmer.github.io/spotify-playlist-app",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
