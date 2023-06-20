@@ -16,8 +16,8 @@ import {
 import AlbumIcon from '@material-ui/icons/Album';
 import PersonIcon from '@material-ui/icons/Person';
 
-function Home() {
-  const [accessToken, setAccessToken] = useState('');
+function Home(props) {
+  const {accessToken, setAccessToken} = props;
   const [spotifyUserName, setSpotifyUserName] = useState('');
   const [settings, setSettings] = useState([
     { name: 'Acousticness', variableName: 'acousticness', min: 0, max: 1 },
@@ -38,6 +38,8 @@ function Home() {
   const [seedOptions, setSeedOptions] = useState([]);
   const [seedType, setSeedType] = useState('Genre');
   const [selectedSeed, setSelectedSeed] = useState('');
+  const [selectedTrackId, setSelectedTrackId] = useState('');
+const [selectedArtistId, setSelectedArtistId] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('spotifyAccessToken');
@@ -49,7 +51,7 @@ function Home() {
   }, []);
 
   const handleLogout = () => {
-    setAccessToken('');
+    setAccessToken(null);
     setSpotifyUserName('');
     localStorage.removeItem('spotifyAccessToken');
     localStorage.removeItem('spotifyUserName');
@@ -57,7 +59,7 @@ function Home() {
 
   const authorizeUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(
     redirectUri
-  )}&response_type=token&scope=playlist-modify-public`;
+  )}&response_type=token&scope=playlist-modify-public%20user-top-read`;
 
   const handleSettingChange = (index, min, max) => {
     setSelectedSettings((prevSettings) => {
@@ -105,9 +107,25 @@ function Home() {
     setSelectedSeed('');
   };
 
-  const handleSeedSelection = (event) => {
-    setSelectedSeed(event.target.value);
-  };
+const handleSeedSelection = (event) => {
+  const selectedValue = event.target.value;
+  setSelectedSeed(selectedValue);
+
+  if (seedType === 'Track') {
+    const selectedTrack = recommendations.find((track) => track.name === selectedValue);
+    if (selectedTrack) {
+      setSelectedTrackId(selectedTrack.id);
+    }
+  } else if (seedType === 'Artist') {
+    const selectedArtist = recommendations.find((track) =>
+      track.artists.some((artist) => artist.name === selectedValue)
+    );
+    if (selectedArtist) {
+      const selectedArtistId = selectedArtist.artists[0];
+      setSelectedArtistId(selectedArtist.id);
+    }
+  }
+};
 
   const fetchSeedOptions = () => {
     const apiEndpoint = `https://api.spotify.com/v1/recommendations/available-genre-seeds`;
@@ -162,7 +180,10 @@ function Home() {
           });
           if (response.ok) {
             const data = await response.json();
-            setSeedOptions(data.items.map((artist) => artist.name));
+            setSeedOptions(data.items.map((artist) => ({
+              name: artist.name,
+              id: artist.id,
+            })));
           } else {
             throw new Error('Failed to fetch seed options');
           }
@@ -179,6 +200,10 @@ function Home() {
           if (response.ok) {
             const data = await response.json();
             setSeedOptions(data.items.map((track) => track.name));
+            setSeedOptions(data.items.map((track) => ({
+              name: track.name,
+              id: track.id,
+            })));
           } else {
             throw new Error('Failed to fetch seed options');
           }
@@ -193,37 +218,47 @@ function Home() {
   
 
   const handleSubmit = () => {
-    const apiEndpoint = 'https://api.spotify.com/v1/recommendations';
-    const seed = seedType === 'Genre' ? `seed_genres=${selectedSeed}` : `seed_${seedType.toLowerCase()}=${selectedSeed}`;
-    const queryParams = selectedSettings
-      .map(({ variableName, min, max }) => `min_${variableName}=${min}&max_${variableName}=${max}`)
-      .join('&');
-    const fullUrl = `${apiEndpoint}?${seed}&${queryParams}`;
+  let seed = '';
+  if (seedType === 'Genre') {
+    seed = `seed_genres=${selectedSeed}`;
+  } else if (seedType === 'Artist') {
+    seed = `seed_artists=${selectedSeed}`;
+  } else if (seedType === 'Track') {
+    seed = `seed_tracks=${selectedSeed}`;
+  }
+  const apiEndpoint = 'https://api.spotify.com/v1/recommendations';
+  
+  const queryParams = selectedSettings
+    .map(({ variableName, min, max }) => `min_${variableName}=${min}&max_${variableName}=${max}`)
+    .join('&');
+  const fullUrl = `${apiEndpoint}?${seed}&${queryParams}`;
 
-    setRequestURL(fullUrl);
+  setRequestURL(fullUrl);
 
-    fetch(fullUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
+  // Make the GET request with the updated URL
+  fetch(fullUrl, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Error fetching recommendations');
       }
+      return response.json();
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Error fetching recommendations');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (!data.tracks) {
-          throw new Error('Invalid response data');
-        }
-        setRecommendations(data.tracks);
-      })
-      .catch((error) => {
-        console.log('Error:', error);
-        // Handle the error gracefully, e.g., display an error message to the user
-      });
-  };
+    .then((data) => {
+      if (!data.tracks) {
+        throw new Error('Invalid response data');
+      }
+      setRecommendations(data.tracks);
+    })
+    .catch((error) => {
+      console.log('Error:', error);
+      // Handle the error gracefully, e.g., display an error message to the user
+    });
+};
+
 
   const renderLoginButton = () => {
     if (accessToken && spotifyUserName) {
@@ -299,16 +334,16 @@ function Home() {
             </Select>
             {seedType !== '' && (
               <Select
-                value={selectedSeed}
-                onChange={handleSeedSelection}
-                style={{ marginRight: '10px', width: '50%' }}
-              >
-                {seedOptions.map((seed, index) => (
-                  <MenuItem key={index} value={seed}>
-                    {seed}
-                  </MenuItem>
-                ))}
-              </Select>
+  value={selectedSeed}
+  onChange={handleSeedSelection}
+  style={{ marginRight: '10px', width: '50%' }}
+>
+  {seedOptions.map((seed, index) => (
+    <MenuItem key={index} value={seed.id}>
+      {seed.name}
+    </MenuItem>
+  ))}
+</Select>
             )}
           </div>
           <button onClick={handleSubmit}>Submit</button>
