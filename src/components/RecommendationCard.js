@@ -9,6 +9,7 @@ import {
   CardContent,
   Typography,
 } from "@material-ui/core";
+import AudioPlayer from "react-audio-player";
 
 function RecommendationCard(props) {
   const { track, onSelectTrack } = props;
@@ -41,6 +42,13 @@ function RecommendationCard(props) {
           <Typography color="textSecondary" variant="caption" component="p">
             {track.artists.map((artist) => artist.name).join(", ")}
           </Typography>
+          {track.preview_url && (
+            <AudioPlayer
+              src={track.preview_url}
+              controls
+              style={{ width: "100%" }}
+            />
+          )}
         </CardContent>
       </Card>
     </div>
