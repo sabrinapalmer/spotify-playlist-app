@@ -10,7 +10,12 @@ function Home(props) {
     { name: "Acousticness", variableName: "acousticness", min: 0, max: 1 },
     { name: "Danceability", variableName: "danceability", min: 0, max: 1 },
     { name: "Energy", variableName: "energy", min: 0, max: 1 },
-    { name: "Instrumentalness", variableName: "instrumentalness", min: 0, max: 1,},
+    {
+      name: "Instrumentalness",
+      variableName: "instrumentalness",
+      min: 0,
+      max: 1,
+    },
     { name: "Key", variableName: "key", min: 0, max: 11 },
     { name: "Liveness", variableName: "liveness", min: 0, max: 1 },
     { name: "Popularity", variableName: "popularity", min: 0, max: 100 },
@@ -27,6 +32,39 @@ function Home(props) {
   const [selectedSeed, setSelectedSeed] = useState("");
   const [selectedTrackId, setSelectedTrackId] = useState("");
   const [selectedArtistId, setSelectedArtistId] = useState("");
+  const [selectedPlaylist, setSelectedPlaylist] = useState("");
+  const [userPlaylists, setUserPlaylists] = useState([]);
+  const [selectedTracks, setSelectedTracks] = useState([]);
+
+  const fetchUserPlaylists = () => {
+    const apiEndpoint = "https://api.spotify.com/v1/me/playlists";
+
+    fetch(apiEndpoint, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Error fetching user playlists");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (!data.items) {
+          throw new Error("Invalid response data");
+        }
+        setUserPlaylists(data.items);
+      })
+      .catch((error) => {
+        console.log("Error:", error);
+        // Handle the error gracefully, e.g., display an error message to the user
+      });
+  };
+
+  useEffect(() => {
+    fetchUserPlaylists();
+  }, [accessToken]);
 
   useEffect(() => {
     const token = localStorage.getItem("spotifyAccessToken");
@@ -122,6 +160,53 @@ function Home(props) {
     }
   };
 
+  const handleSelectTrack = (trackId) => {
+    setSelectedTracks((prevSelectedTracks) => {
+      // Check if the track is already selected
+      const isTrackSelected = prevSelectedTracks.includes(trackId);
+
+      if (isTrackSelected) {
+        // Deselect the track
+        return prevSelectedTracks.filter((id) => id !== trackId);
+      } else {
+        // Select the track
+        return [...prevSelectedTracks, trackId];
+      }
+    });
+  };
+
+  const handleAddToPlaylist = () => {
+    // Add selected tracks to the playlist
+    if (selectedPlaylist && selectedTracks.length > 0) {
+      const apiEndpoint = `https://api.spotify.com/v1/playlists/${selectedPlaylist}/tracks`;
+      const data = {
+        uris: selectedTracks.map((trackId) => `spotify:track:${trackId}`),
+      };
+
+      fetch(apiEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Error adding tracks to playlist");
+          }
+          // Tracks added successfully
+          console.log("Tracks added to playlist");
+          // Clear the selected tracks
+          setSelectedTracks([]);
+        })
+        .catch((error) => {
+          console.log("Error:", error);
+          // Handle the error gracefully, e.g., display an error message to the user
+        });
+    }
+  };
+
   const fetchSeedOptions = () => {
     const apiEndpoint = `https://api.spotify.com/v1/recommendations/available-genre-seeds`;
 
@@ -162,7 +247,9 @@ function Home(props) {
           );
           if (response.ok) {
             const data = await response.json();
-            setSeedOptions(data.genres.map(genre => ({name:genre, id: genre})));
+            setSeedOptions(
+              data.genres.map((genre) => ({ name: genre, id: genre }))
+            );
           } else {
             throw new Error("Failed to fetch seed options");
           }
@@ -296,22 +383,41 @@ function Home(props) {
       </div>
 
       <div style={{ display: "flex" }}>
-      <Sidebar
-        accessToken={accessToken}
-        settings={settings}
-        selectedSettings={selectedSettings}
-        seedOptions={seedOptions}
-        seedType={seedType}
-        selectedSeed={selectedSeed}
-        handleSettingSelection={handleSettingSelection}
-        handleSettingChange={handleSettingChange}
-        handleAddSetting={handleAddSetting}
-        handleClearSettings={handleClearSettings}
-        handleSeedTypeChange={handleSeedTypeChange}
-        handleSeedSelection={handleSeedSelection}
-        handleSubmit={handleSubmit}
-      />
+        <Sidebar
+          accessToken={accessToken}
+          settings={settings}
+          selectedSettings={selectedSettings}
+          seedOptions={seedOptions}
+          seedType={seedType}
+          selectedSeed={selectedSeed}
+          handleSettingSelection={handleSettingSelection}
+          handleSettingChange={handleSettingChange}
+          handleAddSetting={handleAddSetting}
+          handleClearSettings={handleClearSettings}
+          handleSeedTypeChange={handleSeedTypeChange}
+          handleSeedSelection={handleSeedSelection}
+          handleSubmit={handleSubmit}
+        />
         <div style={{ width: "70%", overflow: "hidden" }}>
+          <select
+            value={selectedPlaylist}
+            onChange={(event) => setSelectedPlaylist(event.target.value)}
+            style={{ marginBottom: "10px" }}
+          >
+            <option value="">Select Playlist</option>
+            {userPlaylists.map((playlist) => (
+              <option key={playlist.id} value={playlist.id}>
+                {playlist.name}
+              </option>
+            ))}
+          </select>
+          <button
+            disabled={!selectedTracks.length || !selectedPlaylist}
+            onClick={handleAddToPlaylist}
+          >
+            Add to Playlist
+          </button>
+
           <h2>Recommendations:</h2>
           <div
             style={{
@@ -323,7 +429,11 @@ function Home(props) {
             }}
           >
             {recommendations.map((track) => (
-              <RecommendationCard track={track} />
+              <RecommendationCard
+                track={track}
+                onSelectTrack={handleSelectTrack}
+                isSelected={selectedTracks.includes(track.id)}
+              />
             ))}
           </div>
         </div>

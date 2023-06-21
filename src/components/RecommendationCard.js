@@ -11,16 +11,22 @@ import {
 } from "@material-ui/core";
 
 function RecommendationCard(props) {
-  const { track } = props;
+  const { track, onSelectTrack } = props;
+
+  const handleCardClick = () => {
+    onSelectTrack(track.id);
+  };
   return (
     <div>
       <Card
-        key={track.id}
+        onClick={handleCardClick}
         style={{
           width: "200px",
           margin: "10px",
           flexShrink: 0,
+          outline: props.isSelected ? "2px solid #8A2BE2" : "none",
         }}
+        key={track.id}
       >
         <CardMedia
           component="img"

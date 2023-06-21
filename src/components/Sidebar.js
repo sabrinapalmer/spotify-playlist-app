@@ -19,7 +19,7 @@ function Sidebar(props) {
 
   return (
     <div style={{ width: "40%", padding: "0 20px", overflow: "hidden" }}>
-      <h2>Settings</h2>
+      <h2>Settings:</h2>
       {selectedSettings.map((setting, index) => (
         <div
           key={setting.variableName}
