@@ -20,6 +20,30 @@ function Sidebar(props) {
   return (
     <div style={{ width: "40%", padding: "0 20px", overflow: "hidden" }}>
       <h2>Settings:</h2>
+      <div style={{ display: "flex", paddingBottom: "40px" }}>
+        <Select
+          value={seedType}
+          onChange={handleSeedTypeChange}
+          style={{ marginRight: "10px", width: "50%" }}
+        >
+          <MenuItem value="Genre">Genre</MenuItem>
+          <MenuItem value="Artist">Artist</MenuItem>
+          <MenuItem value="Track">Track</MenuItem>
+        </Select>
+        {seedType !== "" && (
+          <Select
+            value={selectedSeed}
+            onChange={handleSeedSelection}
+            style={{ marginRight: "10px", width: "50%" }}
+          >
+            {seedOptions.map((seed, index) => (
+              <MenuItem key={index} value={seed.id}>
+                {seed.name}
+              </MenuItem>
+            ))}
+          </Select>
+        )}
+      </div>
       {selectedSettings.map((setting, index) => (
         <div
           key={setting.variableName}
@@ -67,37 +91,18 @@ function Sidebar(props) {
       {settings.length > selectedSettings.length && (
         <button onClick={handleAddSetting}>Add Setting</button>
       )}
-      <button onClick={handleClearSettings}>Clear Settings</button>
+      {selectedSettings.length ? (
+        <button onClick={handleClearSettings}>Clear Settings</button>
+      ) : (
+        ""
+      )}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           marginBottom: "10px",
         }}
-      >
-        <Select
-          value={seedType}
-          onChange={handleSeedTypeChange}
-          style={{ marginRight: "10px", width: "50%" }}
-        >
-          <MenuItem value="Genre">Genre</MenuItem>
-          <MenuItem value="Artist">Artist</MenuItem>
-          <MenuItem value="Track">Track</MenuItem>
-        </Select>
-        {seedType !== "" && (
-          <Select
-            value={selectedSeed}
-            onChange={handleSeedSelection}
-            style={{ marginRight: "10px", width: "50%" }}
-          >
-            {seedOptions.map((seed, index) => (
-              <MenuItem key={index} value={seed.id}>
-                {seed.name}
-              </MenuItem>
-            ))}
-          </Select>
-        )}
-      </div>
+      ></div>
       <button onClick={handleSubmit}>Submit</button>
     </div>
   );

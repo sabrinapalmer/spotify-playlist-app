@@ -129,7 +129,7 @@ function Home(props) {
   };
 
   const handleClearSettings = () => {
-    setSelectedSettings([selectedSettings[0]]);
+    setSelectedSettings([]);
   };
 
   const handleSeedTypeChange = (event) => {
