@@ -2,9 +2,8 @@ import React from "react";
 import { clientId, redirectUri } from "../config";
 
 function Login() {
-  const authorizeUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(
-    redirectUri
-  )}&response_type=token&scope=playlist-modify-public%20user-top-read`;
+  const baseRedirectUri = encodeURIComponent(redirectUri);
+  const authorizeUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${baseRedirectUri}&response_type=token&scope=playlist-modify-public%20user-top-read`;
 
   return (
     <div>
